@@ -1,13 +1,27 @@
-import GraphicModel from '../model/GraphicModel';
+// src/controller/ToolbarController.js
+import { setTool, clearCanvas, setColor } from "../redux/actions";
+import store from "../redux/store";
 
 class ToolbarController {
-    setTool(tool) {
-        GraphicModel.setTool(tool);
+  constructor() {
+    if (!ToolbarController.instance) {
+      ToolbarController.instance = this;
     }
+    return ToolbarController.instance;
+  }
 
-    clearCanvas() {
-        GraphicModel.clearObjects();
-    }
+  setTool(tool) {
+    store.dispatch(setTool(tool));
+  }
+
+  setColor(color) {
+    store.dispatch(setColor(color));
+  }
+
+  clearCanvas() {
+    store.dispatch(clearCanvas());
+  }
 }
 
-export default new ToolbarController();
+const instance = new ToolbarController();
+export default instance;
