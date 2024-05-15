@@ -1,14 +1,14 @@
-import React from "react";
-import Canvas from "./components/Canvas";
-import Toolbar from "./components/Toolbar";
+import React from 'react';
+import Canvas from './view/Canvas';
+import Toolbar from './view/Toolbar';
 
 function App() {
-  return (
-    <div className="App">
-      <Toolbar />
-      <Canvas />
-    </div>
-  );
+    return (
+        <div className="App">
+            <Toolbar />
+            <Canvas />
+        </div>
+    );
 }
 
 export default App;
