@@ -1,27 +1,30 @@
-import React from "react";
+import React, { useState } from "react";
 import GraphicModel from "../model/GraphicModel";
-import ShapeFactory from "../factory/ShapeFactory";
 
 function Toolbar() {
-  const handleDraw = () => {
-    const shape = ShapeFactory.createShape("circle", { x: 100, y: 100, radius: 50 });
-    GraphicModel.addObject(shape);
-  };
+  const [tool, setTool] = useState("none"); // 현재 사용 중인 도구
 
-  const handleErase = () => {
-    // 이 예제에서는 마지막 추가된 객체를 지우는 로직을 사용합니다.
-    GraphicModel.objects.length > 0 && GraphicModel.removeObject(GraphicModel.objects[GraphicModel.objects.length - 1]);
-  };
-
-  const handleClear = () => {
-    GraphicModel.clearObjects();
+  const handleToolChange = (newTool) => {
+    setTool(newTool);
+    GraphicModel.setTool(newTool);
   };
 
   return (
     <div>
-      <button onClick={handleDraw}>Draw Circle</button>
-      <button onClick={handleErase}>Erase Last Object</button>
-      <button onClick={handleClear}>Clear Canvas</button>
+      <button onClick={() => handleToolChange(tool === "pencil" ? "none" : "pencil")}>
+        {tool === "pencil" ? "Stop Drawing" : "Pencil"}
+      </button>
+      <button onClick={() => handleToolChange(tool === "eraser" ? "none" : "eraser")}>
+        {tool === "eraser" ? "Stop Erasing" : "Eraser"}
+      </button>
+      <button
+        onClick={() => {
+          handleToolChange("none");
+          GraphicModel.clearObjects();
+        }}
+      >
+        Clear Canvas
+      </button>
     </div>
   );
 }

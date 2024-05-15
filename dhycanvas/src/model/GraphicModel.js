@@ -2,25 +2,40 @@ class GraphicModel {
   constructor() {
     if (!GraphicModel.instance) {
       this.objects = [];
-      this.observers = []; // 관찰자 리스트 초기화
+      this.observers = [];
+      this.currentTool = "none";
+      this.shouldClearCanvas = false;
       GraphicModel.instance = this;
     }
     return GraphicModel.instance;
   }
 
-  addObject(obj) {
-    this.objects.push(obj);
-    this.notifyObservers();
-  }
-
-  removeObject(obj) {
-    this.objects = this.objects.filter((o) => o !== obj);
+  setTool(tool) {
+    this.currentTool = tool;
     this.notifyObservers();
   }
 
   clearObjects() {
     this.objects = [];
+    this.shouldClearCanvas = true;
     this.notifyObservers();
+  }
+
+  clearAcknowledged() {
+    this.shouldClearCanvas = false;
+  }
+  addObject(obj) {
+    if (this.currentTool === "pencil") {
+      this.objects.push(obj);
+      this.notifyObservers();
+    }
+  }
+
+  removeObject(obj) {
+    if (this.currentTool === "eraser") {
+      this.objects = this.objects.filter((o) => o !== obj);
+      this.notifyObservers();
+    }
   }
 
   notifyObservers() {
@@ -37,5 +52,4 @@ class GraphicModel {
 }
 
 const instance = new GraphicModel();
-// Object.freeze(instance);  // 이 부분을 주석 처리하거나 제거합니다.
 export default instance;
