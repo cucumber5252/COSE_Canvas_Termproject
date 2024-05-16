@@ -1,26 +1,34 @@
 // src/components/Canvas.js
 import React, { useRef, useEffect } from "react";
+//Redux 훅 가져옴
 import { useSelector, useDispatch } from "react-redux";
 import { clearCanvas } from "../redux/actions";
+
 import CanvasController from "../controller/CanvasController";
 
 function Canvas() {
+  //캔버스 요소에 대한 참조 생성
   const canvasRef = useRef(null);
+  //Redux 디스패치 함수 얻음 : action을 store에 전달할 수 있도록 함.
   const dispatch = useDispatch();
+  //Redux 상태에서 sholdClearCanvas 값을 가져옴
   const shouldClearCanvas = useSelector((state) => state.shouldClearCanvas);
 
   useEffect(() => {
     const canvas = canvasRef.current;
 
+    //마우스 이벤트 핸들러 설정
     const handleMouseDown = (e) => CanvasController.handleMouseDown(e, canvas);
     const handleMouseMove = (e) => CanvasController.handleMouseMove(e, canvas);
     const handleMouseUp = () => CanvasController.handleMouseUp(canvas);
 
+    //이벤트 리스너 설정
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
     canvas.addEventListener("mouseout", handleMouseUp);
-
+    
+    //컴포넌트가 언마운트될 때 이벤트 리스너를 제거
     return () => {
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);

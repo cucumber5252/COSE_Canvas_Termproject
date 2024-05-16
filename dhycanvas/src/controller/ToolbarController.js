@@ -25,3 +25,7 @@ class ToolbarController {
 
 const instance = new ToolbarController();
 export default instance;
+
+//command 여기서 확장
+//factory - object를 생성하는 것 분리
+//state
