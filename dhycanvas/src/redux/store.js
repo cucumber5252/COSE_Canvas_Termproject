@@ -1,7 +1,9 @@
 // src/redux/store.js
-import { createStore } from "redux";
+import { configureStore } from "@reduxjs/toolkit";
 import graphicReducer from "./reducers";
 
-const store = createStore(graphicReducer);
+const store = configureStore({
+  reducer: graphicReducer,
+});
 
 export default store;

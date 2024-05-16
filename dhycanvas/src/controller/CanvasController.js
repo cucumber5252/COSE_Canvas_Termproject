@@ -1,7 +1,10 @@
 // src/controller/CanvasController.js
+//Redux action들 가지고 옴
 import { startDrawing, stopDrawing, draw, erase, clearCanvas as clearCanvasAction, addObject } from "../redux/actions";
+//Redux sotre를 가지고 옴
 import store from "../redux/store";
 
+//Singleton 패턴의 CanvasController 클래스 정의
 class CanvasController {
   constructor() {
     if (!CanvasController.instance) {
@@ -69,6 +72,7 @@ class CanvasController {
   drawShape(x, y, context, tool, color) {
     context.fillStyle = color;
     context.strokeStyle = color;
+    //변수가 아니라 switch case가 아닌 state class로 만들기. 나중에 어떤 것이 추가 되더라도.
     if (tool === "circle") {
       context.beginPath();
       context.arc(x, y, 20, 0, 2 * Math.PI);
