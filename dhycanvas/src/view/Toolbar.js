@@ -1,7 +1,6 @@
-// view/Toolbar.js
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { setTool, setColor } from '../redux/actions';
+import { setTool, clearCanvas, setColor } from '../redux/actions';
 import ColorPicker from './ColorPicker';
 import ToolbarController from '../controller/ToolbarController';
 
@@ -58,7 +57,12 @@ function Toolbar() {
             <button onClick={() => handleToolChange(tool === 'eraser' ? 'none' : 'eraser')}>
                 {tool === 'eraser' ? 'Stop Erasing' : 'Eraser'}
             </button>
-            <button onClick={handleColorPickerClick}>{displayColorPicker ? 'Close Color Picker' : 'Color'}</button>
+            <button onClick={() => handleToolChange(tool === 'move' ? 'none' : 'move')}>
+                {tool === 'move' ? 'Stop Moving' : 'Move'}
+            </button>
+            <button onClick={handleColorPickerClick} style={{ backgroundColor: color, color: '#fff' }}>
+                {displayColorPicker ? 'Close Color Picker' : 'Color'}
+            </button>
             {displayColorPicker ? (
                 <div className="color-picker">
                     <div className="color-picker-cover" onClick={handleColorPickerClose} />

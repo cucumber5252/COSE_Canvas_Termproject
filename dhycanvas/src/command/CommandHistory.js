@@ -1,4 +1,4 @@
-///command/CommandHistory.js
+//command/CommandHistory.js
 class CommandHistory {
     constructor() {
         this.history = [];

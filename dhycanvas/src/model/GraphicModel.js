@@ -1,4 +1,4 @@
-///model/GraphicModel.js
+// model/GraphicModel.js
 import store from '../redux/store';
 import { addObject, removeObject } from '../redux/actions';
 
@@ -24,9 +24,7 @@ class GraphicModel {
     }
 
     addObject(obj) {
-        console.log('obj', obj);
         this.objects.push(obj);
-        console.log('this.objects', this.objects);
         store.dispatch(addObject(obj));
         this.notifyObservers();
     }
@@ -35,6 +33,14 @@ class GraphicModel {
         this.objects = this.objects.filter((o) => o !== obj);
         store.dispatch(removeObject(obj));
         this.notifyObservers();
+    }
+
+    updateObjectPosition(obj, newX, newY) {
+        const index = this.objects.findIndex((o) => o === obj);
+        if (index !== -1) {
+            this.objects[index] = { ...this.objects[index], x: newX, y: newY };
+            this.notifyObservers();
+        }
     }
 
     notifyObservers() {

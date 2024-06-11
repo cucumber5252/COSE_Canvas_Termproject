@@ -1,10 +1,18 @@
-///controller/CanvasController.js
-
-import { startDrawing, stopDrawing, addObject, removeObject, clearCanvas as clearCanvasAction } from '../redux/actions';
+// controller/CanvasController.js
+import { useEffect } from 'react';
+import {
+    startDrawing,
+    stopDrawing,
+    addObject,
+    removeObject,
+    clearCanvas as clearCanvasAction,
+    updateCanvas,
+} from '../redux/actions';
 import store from '../redux/store';
 import { PencilDrawCommand } from '../command/PencilDrawCommand';
 import { ShapeDrawCommand } from '../command/ShapeDrawCommand';
 import { EraseCommand } from '../command/EraseCommand';
+import { MoveCommand } from '../command/MoveCommand';
 import CommandHistory from '../command/CommandHistory';
 import GraphicModel from '../model/GraphicModel';
 
@@ -12,6 +20,7 @@ class CanvasController {
     constructor() {
         if (!CanvasController.instance) {
             CanvasController.instance = this;
+            this.selectedObject = null;
         }
         return CanvasController.instance;
     }
@@ -22,13 +31,27 @@ class CanvasController {
         const y = e.clientY - rect.top;
         return { x, y };
     }
+
+    selectObject(x, y) {
+        const state = store.getState();
+        this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 10 && Math.abs(obj.y - y) < 10);
+    }
     handleMouseDown(e, canvas) {
         store.dispatch(startDrawing());
         const { x, y } = this.getCursorPosition(e, canvas);
         const state = store.getState();
         const context = canvas.getContext('2d');
 
-        if (state.currentTool === 'circle' || state.currentTool === 'rectangle' || state.currentTool === 'triangle') {
+        if (state.currentTool === 'move') {
+            this.selectObject(x, y);
+            if (this.selectedObject) {
+                this.currentCommand = new MoveCommand(this.selectedObject, x, y);
+            }
+        } else if (
+            state.currentTool === 'circle' ||
+            state.currentTool === 'rectangle' ||
+            state.currentTool === 'triangle'
+        ) {
             this.drawShape(x, y, context, state.currentTool, state.currentColor);
             const obj = { tool: state.currentTool, x, y, color: state.currentColor };
             const command = new ShapeDrawCommand();
@@ -62,9 +85,20 @@ class CanvasController {
             this.draw(x, y, context, state.currentColor);
         } else if (state.currentTool === 'eraser') {
             this.erase(x, y, context);
+        } else if (state.currentTool === 'move' && this.selectedObject) {
+            // 기존 도형 지우기
+            GraphicModel.removeObject(this.selectedObject);
+            // 새로운 위치에 도형 추가
+            this.selectedObject.x = x;
+            this.selectedObject.y = y;
+            GraphicModel.addObject(this.selectedObject);
+
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            GraphicModel.objects.forEach((obj) => {
+                this.drawShape(obj.x, obj.y, context, obj.tool, obj.color);
+            });
         }
     }
-
     handleMouseUp(canvas) {
         store.dispatch(stopDrawing());
         const context = canvas.getContext('2d');
@@ -72,6 +106,12 @@ class CanvasController {
         if (this.currentCommand) {
             CommandHistory.executeCommand(this.currentCommand);
             this.currentCommand = null;
+        }
+        if (this.selectedObject) {
+            const { x, y } = this.selectedObject;
+            const moveCommand = new MoveCommand(this.selectedObject, x, y);
+            CommandHistory.executeCommand(moveCommand);
+            this.selectedObject = null;
         }
     }
 
