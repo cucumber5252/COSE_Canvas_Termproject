@@ -1,4 +1,4 @@
-// src/redux/reducers.js
+// redux/reducers.js
 import {
     SET_TOOL,
     SET_COLOR,

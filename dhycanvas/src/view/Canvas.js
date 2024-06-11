@@ -1,4 +1,4 @@
-////components/Canvas.js////
+///view/Canvas.js
 import React, { useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import CanvasController from '../controller/CanvasController';
@@ -37,12 +37,13 @@ function Canvas() {
 
         if (shouldClearCanvas) {
             context.clearRect(0, 0, canvas.width, canvas.height);
+            GraphicModel.clearObjects();
             dispatch(resetClearCanvas());
         }
 
         if (shouldUpdateCanvas) {
             context.clearRect(0, 0, canvas.width, canvas.height);
-            GraphicModel.getObjects().forEach((obj) => {
+            GraphicModel.objects.forEach((obj) => {
                 context.strokeStyle = obj.color;
                 context.lineWidth = 2;
 
@@ -98,7 +99,7 @@ function Canvas() {
 
     return (
         <div className="canvas-container">
-            <canvas ref={canvasRef} width={800} height={600}></canvas>
+            <canvas ref={canvasRef} width={900} height={600}></canvas>
             <button className="save-button" onClick={() => handleSave(false)}>
                 Save
             </button>

@@ -1,16 +1,10 @@
-////controller/CanvasController.js////
-import {
-    startDrawing,
-    stopDrawing,
-    addObject,
-    removeObject,
-    clearCanvas as clearCanvasAction,
-    updateCanvas,
-} from '../redux/actions';
+///controller/CanvasController.js
+
+import { startDrawing, stopDrawing, addObject, removeObject, clearCanvas as clearCanvasAction } from '../redux/actions';
 import store from '../redux/store';
-import { DrawCommand } from '../command/DrawCommand';
+import { PencilDrawCommand } from '../command/PencilDrawCommand';
+import { ShapeDrawCommand } from '../command/ShapeDrawCommand';
 import { EraseCommand } from '../command/EraseCommand';
-import { ClearCommand } from '../command/ClearCommand';
 import CommandHistory from '../command/CommandHistory';
 import GraphicModel from '../model/GraphicModel';
 
@@ -28,7 +22,6 @@ class CanvasController {
         const y = e.clientY - rect.top;
         return { x, y };
     }
-
     handleMouseDown(e, canvas) {
         store.dispatch(startDrawing());
         const { x, y } = this.getCursorPosition(e, canvas);
@@ -38,12 +31,23 @@ class CanvasController {
         if (state.currentTool === 'circle' || state.currentTool === 'rectangle' || state.currentTool === 'triangle') {
             this.drawShape(x, y, context, state.currentTool, state.currentColor);
             const obj = { tool: state.currentTool, x, y, color: state.currentColor };
-            const command = new DrawCommand(obj);
+            const command = new ShapeDrawCommand();
+            command.addPoint(obj);
             CommandHistory.executeCommand(command);
             store.dispatch(addObject(obj));
-        } else {
+        } else if (state.currentTool === 'pencil') {
+            this.currentCommand = new PencilDrawCommand();
             context.beginPath();
             context.moveTo(x, y);
+            const obj = { tool: 'pencil', x, y, color: state.currentColor };
+            this.currentCommand.addPoint(obj);
+            store.dispatch(addObject(obj));
+        } else if (state.currentTool === 'eraser') {
+            this.currentCommand = new EraseCommand();
+            const obj = { tool: 'eraser', x, y };
+            this.currentCommand.addPoint(obj);
+            context.clearRect(x - 10, y - 10, 20, 20);
+            store.dispatch(removeObject(obj));
         }
     }
 
@@ -65,6 +69,10 @@ class CanvasController {
         store.dispatch(stopDrawing());
         const context = canvas.getContext('2d');
         context.beginPath();
+        if (this.currentCommand) {
+            CommandHistory.executeCommand(this.currentCommand);
+            this.currentCommand = null;
+        }
     }
 
     draw(x, y, context, color) {
@@ -74,16 +82,14 @@ class CanvasController {
         context.beginPath();
         context.moveTo(x, y);
         const obj = { tool: 'pencil', x, y, color };
-        const command = new DrawCommand(obj);
-        CommandHistory.executeCommand(command);
+        this.currentCommand.addPoint(obj);
         store.dispatch(addObject(obj));
     }
 
     erase(x, y, context) {
-        context.clearRect(x - 10, y - 10, 20, 20);
         const obj = { tool: 'eraser', x, y };
-        const command = new EraseCommand(obj);
-        CommandHistory.executeCommand(command);
+        this.currentCommand.addPoint(obj);
+        context.clearRect(x - 10, y - 10, 20, 20);
         store.dispatch(removeObject(obj));
     }
 
@@ -113,17 +119,8 @@ class CanvasController {
         store.dispatch(clearCanvasAction());
         const context = canvas.getContext('2d');
         context.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Save current state and clear
-        const objects = GraphicModel.getObjects();
-        const clearCommand = new ClearCommand(objects);
-        CommandHistory.executeCommand(clearCommand);
-
-        // 이 줄은 필요없습니다.
-        // GraphicModel.clearObjects();
-
-        // 이 줄은 제거해야 합니다.
-        // CommandHistory.clearHistory();
+        GraphicModel.clearObjects();
+        CommandHistory.clearHistory();
     }
 }
 

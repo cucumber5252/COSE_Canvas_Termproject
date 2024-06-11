@@ -1,8 +1,7 @@
 ////controller/ToolbarController.js////
 import CommandHistory from '../command/CommandHistory';
 import store from '../redux/store';
-import { setTool, clearCanvas, setColor, updateCanvas, resetUpdateCanvas } from '../redux/actions';
-
+import { setTool, setColor, updateCanvas, clearCanvas } from '../redux/actions';
 class ToolbarController {
     constructor() {
         if (!ToolbarController.instance) {
@@ -20,23 +19,18 @@ class ToolbarController {
     }
 
     clearCanvas() {
+        CommandHistory.clearHistory();
         store.dispatch(clearCanvas());
     }
 
     undo() {
         CommandHistory.undo();
         store.dispatch(updateCanvas());
-        setTimeout(() => {
-            store.dispatch(resetUpdateCanvas());
-        }, 0);
     }
 
     redo() {
         CommandHistory.redo();
         store.dispatch(updateCanvas());
-        setTimeout(() => {
-            store.dispatch(resetUpdateCanvas());
-        }, 0);
     }
 }
 

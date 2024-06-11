@@ -1,7 +1,7 @@
-// src/components/Toolbar.js
+// view/Toolbar.js
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { setTool, clearCanvas, setColor } from '../redux/actions';
+import { setTool, setColor } from '../redux/actions';
 import ColorPicker from './ColorPicker';
 import ToolbarController from '../controller/ToolbarController';
 
@@ -37,6 +37,10 @@ function Toolbar() {
         ToolbarController.redo();
     };
 
+    const handleClearCanvas = () => {
+        ToolbarController.clearCanvas();
+    };
+
     return (
         <div className="toolbar">
             <button onClick={() => handleToolChange(tool === 'pencil' ? 'none' : 'pencil')}>
@@ -63,14 +67,7 @@ function Toolbar() {
             ) : null}
             <button onClick={handleUndo}>Undo</button>
             <button onClick={handleRedo}>Redo</button>
-            <button
-                onClick={() => {
-                    handleToolChange('none');
-                    dispatch(clearCanvas());
-                }}
-            >
-                Clear Canvas
-            </button>
+            <button onClick={handleClearCanvas}>Clear Canvas</button>
         </div>
     );
 }

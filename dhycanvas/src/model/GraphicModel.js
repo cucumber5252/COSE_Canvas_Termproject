@@ -1,6 +1,6 @@
-/////model/GraphicModel.js////
-import store from '../redux/store'; // Import the store
-import { addObject, removeObject } from '../redux/actions'; // Import the actions
+///model/GraphicModel.js
+import store from '../redux/store';
+import { addObject, removeObject } from '../redux/actions';
 
 class GraphicModel {
     constructor() {
@@ -24,14 +24,16 @@ class GraphicModel {
     }
 
     addObject(obj) {
-        if (!this.objects.includes(obj)) {
-            this.objects.push(obj);
-            this.notifyObservers();
-        }
+        console.log('obj', obj);
+        this.objects.push(obj);
+        console.log('this.objects', this.objects);
+        store.dispatch(addObject(obj));
+        this.notifyObservers();
     }
 
     removeObject(obj) {
         this.objects = this.objects.filter((o) => o !== obj);
+        store.dispatch(removeObject(obj));
         this.notifyObservers();
     }
 
@@ -45,10 +47,6 @@ class GraphicModel {
 
     removeObserver(observer) {
         this.observers = this.observers.filter((obs) => obs !== observer);
-    }
-
-    getObjects() {
-        return [...this.objects]; // Return a copy of the objects array
     }
 }
 

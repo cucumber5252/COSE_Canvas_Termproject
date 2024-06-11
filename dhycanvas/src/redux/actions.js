@@ -1,4 +1,4 @@
-// src/redux/actions.js
+/// redux/actions.js
 export const SET_TOOL = 'SET_TOOL';
 export const SET_COLOR = 'SET_COLOR';
 export const ADD_OBJECT = 'ADD_OBJECT';

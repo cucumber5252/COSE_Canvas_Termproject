@@ -1,8 +1,8 @@
-/// command/EraseCommand.js
+///command/ShapeDrawCommand.js
 import { Command } from './Command';
 import GraphicModel from '../model/GraphicModel';
 
-export class EraseCommand extends Command {
+export class ShapeDrawCommand extends Command {
     constructor() {
         super();
         this.objects = [];
