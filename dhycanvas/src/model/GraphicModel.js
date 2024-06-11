@@ -1,10 +1,13 @@
+/////model/GraphicModel.js////
+import store from '../redux/store'; // Import the store
+import { addObject, removeObject } from '../redux/actions'; // Import the actions
+
 class GraphicModel {
     constructor() {
         if (!GraphicModel.instance) {
             this.objects = [];
             this.observers = [];
             this.currentTool = 'none';
-            this.shouldClearCanvas = false;
             GraphicModel.instance = this;
         }
         return GraphicModel.instance;
@@ -17,26 +20,19 @@ class GraphicModel {
 
     clearObjects() {
         this.objects = [];
-        this.shouldClearCanvas = true;
         this.notifyObservers();
     }
 
-    clearAcknowledged() {
-        this.shouldClearCanvas = false;
-    }
-
     addObject(obj) {
-        if (this.currentTool === 'pencil') {
+        if (!this.objects.includes(obj)) {
             this.objects.push(obj);
             this.notifyObservers();
         }
     }
 
     removeObject(obj) {
-        if (this.currentTool === 'eraser') {
-            this.objects = this.objects.filter((o) => o !== obj);
-            this.notifyObservers();
-        }
+        this.objects = this.objects.filter((o) => o !== obj);
+        this.notifyObservers();
     }
 
     notifyObservers() {
@@ -49,6 +45,10 @@ class GraphicModel {
 
     removeObserver(observer) {
         this.observers = this.observers.filter((obs) => obs !== observer);
+    }
+
+    getObjects() {
+        return [...this.objects]; // Return a copy of the objects array
     }
 }
 
