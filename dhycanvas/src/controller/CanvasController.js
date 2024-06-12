@@ -1,4 +1,3 @@
-// CanvasController.js
 import {
     startDrawing,
     stopDrawing,
@@ -43,15 +42,63 @@ class CanvasController {
         return CanvasController.instance;
     }
 
-    // setCanvas(canvas) {
-    //     this.canvas = canvas;
-    //     this.context = canvas.getContext('2d');
-    // }
+    setCanvas(canvas) {
+        this.canvas = canvas;
+        this.context = canvas.getContext('2d');
+    }
 
     update() {
-        // this.clearCanvas(false);
-        // this.drawObjects(GraphicModel.objects);
         console.log('Canvas updated');
+    }
+
+    clearCanvas() {
+        const context = this.context;
+        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        GraphicModel.clearObjects();
+        CommandHistory.clearHistory();
+    }
+
+    updateCanvas() {
+        const context = this.context;
+        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        GraphicModel.objects.forEach((obj) => {
+            context.strokeStyle = obj.color;
+            context.fillStyle = obj.color;
+            context.lineWidth = 2;
+
+            if (obj.tool === 'pencil') {
+                context.beginPath();
+                context.moveTo(obj.x, obj.y);
+                context.lineTo(obj.x, obj.y);
+                context.stroke();
+            } else if (obj.tool === 'eraser') {
+                context.clearRect(obj.x - 10, obj.y - 10, 20, 20);
+            } else if (obj.tool === 'circle') {
+                context.beginPath();
+                context.arc(obj.x, obj.y, 20, 0, 2 * Math.PI);
+                context.fill();
+                context.stroke();
+            } else if (obj.tool === 'rectangle') {
+                context.beginPath();
+                context.rect(obj.x - 20, obj.y - 20, 40, 40);
+                context.fill();
+                context.stroke();
+            } else if (obj.tool === 'triangle') {
+                context.beginPath();
+                context.moveTo(obj.x, obj.y - 20);
+                context.lineTo(obj.x - 20, obj.y + 20);
+                context.lineTo(obj.x + 20, obj.y + 20);
+                context.closePath();
+                context.fill();
+                context.stroke();
+            }
+
+            if (obj === GraphicModel.selectedObject) {
+                context.strokeStyle = 'blue';
+                context.lineWidth = 4;
+                context.strokeRect(obj.x - 25, obj.y - 25, 50, 50);
+            }
+        });
     }
 
     getCursorPosition(e, canvas) {
@@ -171,22 +218,6 @@ class CanvasController {
             this.previousClick = Date.now();
             if (state.currentTool === 'none') {
                 this.selectObject(x, y, canvas);
-            } else if (
-                state.currentTool === 'circle' ||
-                state.currentTool === 'rectangle' ||
-                state.currentTool === 'triangle'
-            ) {
-                context.strokeStyle = state.currentColor;
-                context.lineWidth = 2;
-                context.fillStyle = state.currentColor;
-                const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
-                shape.draw(context);
-                const obj = { tool: state.currentTool, x, y, color: state.currentColor };
-                const command = new DrawCommand();
-                command.addPoint(obj);
-                command.execute(context);
-                CommandHistory.executeCommand(command);
-                store.dispatch(addObject(shape));
             } else if (state.currentTool === 'pencil') {
                 this.currentCommand = new DrawCommand();
                 context.beginPath();
@@ -201,6 +232,18 @@ class CanvasController {
                 store.dispatch(removeObject(obj));
                 store.dispatch(startDrawing());
                 console.log(`Eraser used at: (${x}, ${y})`);
+            } else {
+                context.strokeStyle = state.currentColor;
+                context.lineWidth = 2;
+                context.fillStyle = state.currentColor;
+                const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
+                shape.draw(context);
+                const obj = { tool: state.currentTool, x, y, color: state.currentColor };
+                const command = new DrawCommand();
+                command.addPoint(obj);
+                command.execute(context);
+                CommandHistory.executeCommand(command);
+                store.dispatch(addObject(shape));
             }
         }
     }
@@ -265,49 +308,6 @@ class CanvasController {
         store.dispatch(removeObject(obj));
         console.log(`Eraser used at: (${x}, ${y})`);
     }
-
-    clearCanvas(canvas) {
-        store.dispatch(clearCanvasAction());
-        const context = canvas.getContext('2d');
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        GraphicModel.clearObjects();
-        CommandHistory.clearHistory();
-    }
-
-    //     drawObjects(objects) {
-    //         objects.forEach((obj) => {
-    //             this.context.strokeStyle = obj.color;
-    //             this.context.fillStyle = obj.color;
-    //             this.context.lineWidth = 2;
-
-    //             if (obj.draw) {
-    //                 obj.draw(this.context);
-    //             } else if (obj.tool === 'pencil') {
-    //                 this.context.beginPath();
-    //                 this.context.moveTo(obj.x, obj.y);
-    //                 this.context.lineTo(obj.x, obj.y);
-    //                 this.context.stroke();
-    //             } else if (obj.tool === 'eraser') {
-    //                 this.context.clearRect(obj.x - 10, obj.y - 10, 20, 20);
-    //             }
-
-    //             if (obj.isSelected) {
-    //                 this.context.strokeStyle = 'blue';
-    //                 this.context.lineWidth = 4;
-    //                 this.context.strokeRect(obj.x - 25, obj.y - 25, 50, 50);
-    //             }
-    //         });
-    //     }
-    //     selectObject(x, y) {
-    //         const state = store.getState();
-    //         this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 20 && Math.abs(obj.y - y) < 20);
-    //         if (this.selectedObject) {
-    //             const selectCommand = new SelectCommand(this.selectedObject);
-    //             CommandHistory.executeCommand(selectCommand);
-    //             this.update();
-    //             this.showContextMenu(x, y);
-    //         }
-    //     }
 }
 
 export default CanvasController.getInstance();
