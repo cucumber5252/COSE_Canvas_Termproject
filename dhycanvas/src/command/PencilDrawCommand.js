@@ -1,22 +1,22 @@
 // command/PencilDrawCommand.js
-import { Command } from "./Command";
-import GraphicModel from "../model/GraphicModel";
+import { Command } from './Command';
+import GraphicModel from '../model/GraphicModel';
 
 export class PencilDrawCommand extends Command {
-  constructor() {
-    super();
-    this.objects = [];
-  }
+    constructor() {
+        super();
+        this.points = [];
+    }
 
-  addPoint(object) {
-    this.objects.push(object);
-  }
+    addPoint(point) {
+        this.points.push(point);
+    }
 
-  execute() {
-    this.objects.forEach((object) => GraphicModel.addObject(object));
-  }
+    execute() {
+        this.points.forEach((point) => GraphicModel.addObject(point));
+    }
 
-  undo() {
-    this.objects.forEach((object) => GraphicModel.removeObject(object));
-  }
+    undo() {
+        this.points.forEach((point) => GraphicModel.removeObject(point));
+    }
 }
