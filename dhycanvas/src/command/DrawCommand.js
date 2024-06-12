@@ -2,7 +2,7 @@
 import { Command } from './Command';
 import GraphicModel from '../model/GraphicModel';
 
-export class PencilDrawCommand extends Command {
+export class DrawCommand extends Command {
     constructor() {
         super();
         this.points = [];

@@ -8,12 +8,12 @@ import {
     updateCanvas,
 } from '../redux/actions';
 import store from '../redux/store';
-import { PencilDrawCommand } from '../command/PencilDrawCommand';
-import { ShapeDrawCommand } from '../command/ShapeDrawCommand';
+import { DrawCommand } from '../command/DrawCommand';
 import { EraseCommand } from '../command/EraseCommand';
 import { MoveCommand } from '../command/MoveCommand';
 import { SelectCommand } from '../command/SelectCommand';
 import { DeleteCommand } from '../command/DeleteCommand';
+import { ShapeFactory } from '../model/ShapeFactory';
 import CommandHistory from '../command/CommandHistory';
 import GraphicModel from '../model/GraphicModel';
 
@@ -153,15 +153,19 @@ class CanvasController {
                 state.currentTool === 'rectangle' ||
                 state.currentTool === 'triangle'
             ) {
-                this.drawShape(x, y, context, state.currentTool, state.currentColor);
+                context.strokeStyle = state.currentColor;
+                context.lineWidth = 2;
+                context.fillStyle = state.currentColor;
+                const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
+                shape.draw(context);
                 const obj = { tool: state.currentTool, x, y, color: state.currentColor };
-                const command = new ShapeDrawCommand();
+                const command = new DrawCommand();
                 command.addPoint(obj);
+                command.execute(context);
                 CommandHistory.executeCommand(command);
-                store.dispatch(addObject(obj));
-                console.log(`Shape drawn: ${JSON.stringify(obj)}`);
+                store.dispatch(addObject(shape));
             } else if (state.currentTool === 'pencil') {
-                this.currentCommand = new PencilDrawCommand();
+                this.currentCommand = new DrawCommand();
                 context.beginPath();
                 context.moveTo(x, y);
                 store.dispatch(startDrawing());
@@ -237,32 +241,6 @@ class CanvasController {
         context.clearRect(x - 10, y - 10, 20, 20);
         store.dispatch(removeObject(obj));
         console.log(`Eraser used at: (${x}, ${y})`);
-    }
-
-    drawShape(x, y, context, tool, color) {
-        context.strokeStyle = color;
-        context.lineWidth = 2;
-        context.fillStyle = color;
-
-        if (tool === 'circle') {
-            context.beginPath();
-            context.arc(x, y, 20, 0, 2 * Math.PI);
-            context.fill();
-            context.stroke();
-        } else if (tool === 'rectangle') {
-            context.beginPath();
-            context.rect(x - 20, y - 20, 40, 40);
-            context.fill();
-            context.stroke();
-        } else if (tool === 'triangle') {
-            context.beginPath();
-            context.moveTo(x, y - 20);
-            context.lineTo(x - 20, y + 20);
-            context.lineTo(x + 20, y + 20);
-            context.closePath();
-            context.fill();
-            context.stroke();
-        }
     }
 
     clearCanvas(canvas) {

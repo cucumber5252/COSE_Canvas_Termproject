@@ -1,43 +1,53 @@
-// class ShapeFactory {
-//   static createShape(type, properties) {
-//     switch (type) {
-//       case "circle":
-//         return new Circle(properties);
-//       case "rectangle":
-//         return new Rectangle(properties);
-//       default:
-//         throw new Error("Unsupported shape type");
-//     }
-//   }
-// }
+// model/ShapeFactory.js
+export class ShapeFactory {
+    static createShape(type, x, y, color) {
+        switch (type) {
+            case 'circle':
+                return new Circle(x, y, color);
+            case 'rectangle':
+                return new Rectangle(x, y, color);
+            case 'triangle':
+                return new Triangle(x, y, color);
+            default:
+                throw new Error(`Unknown shape type: ${type}`);
+        }
+    }
+}
 
-// class Circle {
-//   constructor({ x, y, radius }) {
-//     this.x = x;
-//     this.y = y;
-//     this.radius = radius;
-//   }
+export class Shape {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+    }
+}
 
-//   draw(context) {
-//     context.beginPath();
-//     context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-//     context.stroke();
-//   }
-// }
+export class Circle extends Shape {
+    draw(context) {
+        context.beginPath();
+        context.arc(this.x, this.y, 20, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+    }
+}
 
-// class Rectangle {
-//   constructor({ x, y, width, height }) {
-//     this.x = x;
-//     this.y = y;
-//     this.width = width;
-//     this.height = height;
-//   }
+export class Rectangle extends Shape {
+    draw(context) {
+        context.beginPath();
+        context.rect(this.x - 20, this.y - 20, 40, 40);
+        context.fill();
+        context.stroke();
+    }
+}
 
-//   draw(context) {
-//     context.beginPath();
-//     context.rect(this.x, this.y, this.width, this.height);
-//     context.stroke();
-//   }
-// }
-
-// export default ShapeFactory;
+export class Triangle extends Shape {
+    draw(context) {
+        context.beginPath();
+        context.moveTo(this.x, this.y - 20);
+        context.lineTo(this.x - 20, this.y + 20);
+        context.lineTo(this.x + 20, this.y + 20);
+        context.closePath();
+        context.fill();
+        context.stroke();
+    }
+}
