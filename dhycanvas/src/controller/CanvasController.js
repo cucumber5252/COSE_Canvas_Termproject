@@ -1,5 +1,12 @@
 // CanvasController.js
-import { startDrawing, stopDrawing, addObject, removeObject, clearCanvas as clearCanvasAction } from '../redux/actions';
+import {
+    startDrawing,
+    stopDrawing,
+    addObject,
+    removeObject,
+    clearCanvas as clearCanvasAction,
+    updateCanvas,
+} from '../redux/actions';
 import store from '../redux/store';
 import { DrawCommand } from '../command/DrawCommand';
 import { EraseCommand } from '../command/EraseCommand';
@@ -36,43 +43,45 @@ class CanvasController {
         return CanvasController.instance;
     }
 
-    setCanvas(canvas) {
-        this.canvas = canvas;
-        this.context = canvas.getContext('2d');
-    }
+    // setCanvas(canvas) {
+    //     this.canvas = canvas;
+    //     this.context = canvas.getContext('2d');
+    // }
 
     update() {
-        this.clearCanvas(false);
-        this.drawObjects(GraphicModel.objects);
+        // this.clearCanvas(false);
+        // this.drawObjects(GraphicModel.objects);
+        console.log('Canvas updated');
     }
 
-    getCursorPosition(e) {
-        const rect = this.canvas.getBoundingClientRect();
+    getCursorPosition(e, canvas) {
+        const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         return { x, y };
     }
 
-    selectObject(x, y) {
+    selectObject(x, y, canvas) {
         const state = store.getState();
         this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 20 && Math.abs(obj.y - y) < 20);
         if (this.selectedObject) {
             const selectCommand = new SelectCommand(this.selectedObject);
             CommandHistory.executeCommand(selectCommand);
-            this.update();
-            this.showContextMenu(x, y);
+            store.dispatch(updateCanvas());
+            console.log(`Object selected: ${JSON.stringify(this.selectedObject)}`);
+            this.showContextMenu(x, y, canvas);
         }
     }
 
-    showContextMenu(x, y) {
+    showContextMenu(x, y, canvas) {
         if (this.contextMenu) {
             this.contextMenu.remove();
         }
 
         this.contextMenu = document.createElement('div');
         this.contextMenu.style.position = 'absolute';
-        this.contextMenu.style.left = `${x + this.canvas.offsetLeft + 520}px`;
-        this.contextMenu.style.top = `${y + this.canvas.offsetTop + 180}px`;
+        this.contextMenu.style.left = `${x + canvas.offsetLeft + 530}px`;
+        this.contextMenu.style.top = `${y + canvas.offsetTop + 130}px`;
         this.contextMenu.style.background = 'white';
         this.contextMenu.style.border = '1px solid #ccc';
         this.contextMenu.style.padding = '5px';
@@ -93,7 +102,8 @@ class CanvasController {
             this.isMoveMode = true;
             document.body.style.cursor = 'move';
             this.contextMenu.remove();
-            this.showMoveCompleteButton();
+            this.showMoveCompleteButton(canvas);
+            console.log('Move mode activated');
         };
 
         const deleteButton = document.createElement('button');
@@ -108,8 +118,9 @@ class CanvasController {
             const deleteCommand = new DeleteCommand(this.selectedObject);
             CommandHistory.executeCommand(deleteCommand);
             this.selectedObject = null;
-            this.update();
+            store.dispatch(updateCanvas());
             this.contextMenu.remove();
+            console.log('Object deleted');
         };
 
         this.contextMenu.appendChild(moveButton);
@@ -117,7 +128,7 @@ class CanvasController {
         document.body.appendChild(this.contextMenu);
     }
 
-    showMoveCompleteButton() {
+    showMoveCompleteButton(canvas) {
         if (this.moveCompleteButton) {
             this.moveCompleteButton.remove();
         }
@@ -125,8 +136,8 @@ class CanvasController {
         this.moveCompleteButton = document.createElement('button');
         this.moveCompleteButton.innerText = 'Complete Move';
         this.moveCompleteButton.style.position = 'absolute';
-        this.moveCompleteButton.style.left = `${this.canvas.offsetLeft + 10}px`;
-        this.moveCompleteButton.style.top = `${this.canvas.offsetTop + 10}px`;
+        this.moveCompleteButton.style.left = `${canvas.offsetLeft + 10}px`;
+        this.moveCompleteButton.style.top = `${canvas.offsetTop + 10}px`;
         this.moveCompleteButton.style.background = '#2196F3';
         this.moveCompleteButton.style.color = 'white';
         this.moveCompleteButton.style.border = 'none';
@@ -141,15 +152,17 @@ class CanvasController {
             if (this.selectedObject) {
                 this.selectedObject.isSelected = false;
             }
-            this.update();
+            store.dispatch(updateCanvas());
+            console.log('Move mode deactivated');
         };
 
         document.body.appendChild(this.moveCompleteButton);
     }
 
-    handleMouseDown(e) {
-        const { x, y } = this.getCursorPosition(e);
+    handleMouseDown(e, canvas) {
+        const { x, y } = this.getCursorPosition(e, canvas);
         const state = store.getState();
+        const context = canvas.getContext('2d');
 
         if (this.selectedObject && this.isMoveMode) {
             this.currentCommand = new MoveCommand(this.selectedObject, x, y);
@@ -157,130 +170,144 @@ class CanvasController {
         } else {
             this.previousClick = Date.now();
             if (state.currentTool === 'none') {
-                this.selectObject(x, y);
+                this.selectObject(x, y, canvas);
+            } else if (
+                state.currentTool === 'circle' ||
+                state.currentTool === 'rectangle' ||
+                state.currentTool === 'triangle'
+            ) {
+                context.strokeStyle = state.currentColor;
+                context.lineWidth = 2;
+                context.fillStyle = state.currentColor;
+                const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
+                shape.draw(context);
+                const obj = { tool: state.currentTool, x, y, color: state.currentColor };
+                const command = new DrawCommand();
+                command.addPoint(obj);
+                command.execute(context);
+                CommandHistory.executeCommand(command);
+                store.dispatch(addObject(shape));
             } else if (state.currentTool === 'pencil') {
                 this.currentCommand = new DrawCommand();
-                this.context.beginPath();
-                this.context.moveTo(x, y);
+                context.beginPath();
+                context.moveTo(x, y);
                 store.dispatch(startDrawing());
+                console.log(`Pencil drawing started at: (${x}, ${y})`);
             } else if (state.currentTool === 'eraser') {
                 this.currentCommand = new EraseCommand();
                 const obj = { tool: 'eraser', x, y };
                 this.currentCommand.addPoint(obj);
-                this.context.clearRect(x - 10, y - 10, 20, 20);
+                context.clearRect(x - 10, y - 10, 20, 20);
                 store.dispatch(removeObject(obj));
                 store.dispatch(startDrawing());
-            } else {
-                const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
-                shape.draw(this.context);
-                const command = new DrawCommand();
-                command.addPoint(shape);
-                command.execute();
-                CommandHistory.executeCommand(command);
-                store.dispatch(addObject(shape));
+                console.log(`Eraser used at: (${x}, ${y})`);
             }
         }
     }
 
-    handleMouseMove(e) {
+    handleMouseMove(e, canvas) {
         const state = store.getState();
         if (!state.isDrawing) return;
 
-        const { x, y } = this.getCursorPosition(e);
+        const context = canvas.getContext('2d');
+        const { x, y } = this.getCursorPosition(e, canvas);
 
         if (state.currentTool === 'pencil' && this.currentCommand) {
-            this.draw(x, y, state.currentColor);
+            this.draw(x, y, context, state.currentColor);
         } else if (state.currentTool === 'eraser' && this.currentCommand) {
-            this.erase(x, y);
+            this.erase(x, y, context);
         } else if (this.isMoveMode && this.selectedObject) {
-            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.selectedObject.x = x;
-            this.selectedObject.y = y;
-            this.update();
+            const moveCommand = new MoveCommand(this.selectedObject, x, y);
+            CommandHistory.executeCommand(moveCommand);
+            store.dispatch(updateCanvas());
+            console.log(`Object moved to: (${x}, ${y})`);
         }
     }
 
-    handleMouseUp(e) {
-        const state = store.getState();
+    handleMouseUp(e, canvas) {
         store.dispatch(stopDrawing());
+        const context = canvas.getContext('2d');
+        context.beginPath();
         if (this.currentCommand) {
-            if (state.currentTool === 'pencil') {
-                CommandHistory.executeCommand(this.currentCommand);
-            } else {
-                CommandHistory.executeCommand(this.currentCommand);
-            }
+            CommandHistory.executeCommand(this.currentCommand);
             this.currentCommand = null;
         }
         if (this.isMoveMode && this.selectedObject) {
-            const { x, y } = this.getCursorPosition(e);
+            const { x, y } = this.getCursorPosition(e, canvas);
+            this.selectedObject.x = x;
+            this.selectedObject.y = y;
             const moveCommand = new MoveCommand(this.selectedObject, x, y);
             CommandHistory.executeCommand(moveCommand);
             this.isMoveMode = false;
             this.selectedObject = null;
             document.body.style.cursor = 'default';
-            this.update();
+            store.dispatch(updateCanvas());
+            console.log(`Object moved to: (${x}, ${y})`);
         }
     }
 
-    draw(x, y, color) {
-        this.context.strokeStyle = color;
-        this.context.lineTo(x, y);
-        this.context.stroke();
-        this.context.beginPath();
-        this.context.moveTo(x, y);
+    draw(x, y, context, color) {
+        context.strokeStyle = color;
+        context.lineTo(x, y);
+        context.stroke();
+        context.beginPath();
+        context.moveTo(x, y);
         const point = { tool: 'pencil', x, y, color };
         this.currentCommand.addPoint(point);
+        store.dispatch(addObject(point));
+        console.log(`Pencil drawing at: (${x}, ${y})`);
     }
 
-    erase(x, y) {
+    erase(x, y, context) {
         const obj = { tool: 'eraser', x, y };
         this.currentCommand.addPoint(obj);
-        this.context.clearRect(x - 10, y - 10, 20, 20);
+        context.clearRect(x - 10, y - 10, 20, 20);
         store.dispatch(removeObject(obj));
+        console.log(`Eraser used at: (${x}, ${y})`);
     }
 
-    clearCanvas(notify = true) {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        if (notify) {
-            GraphicModel.clearObjects();
-            CommandHistory.clearHistory();
-        }
+    clearCanvas(canvas) {
+        store.dispatch(clearCanvasAction());
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        GraphicModel.clearObjects();
+        CommandHistory.clearHistory();
     }
 
-    drawObjects(objects) {
-        objects.forEach((obj) => {
-            this.context.strokeStyle = obj.color;
-            this.context.fillStyle = obj.color;
-            this.context.lineWidth = 2;
+    //     drawObjects(objects) {
+    //         objects.forEach((obj) => {
+    //             this.context.strokeStyle = obj.color;
+    //             this.context.fillStyle = obj.color;
+    //             this.context.lineWidth = 2;
 
-            if (obj.draw) {
-                obj.draw(this.context);
-            } else if (obj.tool === 'pencil') {
-                this.context.beginPath();
-                this.context.moveTo(obj.x, obj.y);
-                this.context.lineTo(obj.x, obj.y);
-                this.context.stroke();
-            } else if (obj.tool === 'eraser') {
-                this.context.clearRect(obj.x - 10, obj.y - 10, 20, 20);
-            }
+    //             if (obj.draw) {
+    //                 obj.draw(this.context);
+    //             } else if (obj.tool === 'pencil') {
+    //                 this.context.beginPath();
+    //                 this.context.moveTo(obj.x, obj.y);
+    //                 this.context.lineTo(obj.x, obj.y);
+    //                 this.context.stroke();
+    //             } else if (obj.tool === 'eraser') {
+    //                 this.context.clearRect(obj.x - 10, obj.y - 10, 20, 20);
+    //             }
 
-            if (obj.isSelected) {
-                this.context.strokeStyle = 'blue';
-                this.context.lineWidth = 4;
-                this.context.strokeRect(obj.x - 25, obj.y - 25, 50, 50);
-            }
-        });
-    }
-    selectObject(x, y) {
-        const state = store.getState();
-        this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 20 && Math.abs(obj.y - y) < 20);
-        if (this.selectedObject) {
-            const selectCommand = new SelectCommand(this.selectedObject);
-            CommandHistory.executeCommand(selectCommand);
-            this.update();
-            this.showContextMenu(x, y);
-        }
-    }
+    //             if (obj.isSelected) {
+    //                 this.context.strokeStyle = 'blue';
+    //                 this.context.lineWidth = 4;
+    //                 this.context.strokeRect(obj.x - 25, obj.y - 25, 50, 50);
+    //             }
+    //         });
+    //     }
+    //     selectObject(x, y) {
+    //         const state = store.getState();
+    //         this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 20 && Math.abs(obj.y - y) < 20);
+    //         if (this.selectedObject) {
+    //             const selectCommand = new SelectCommand(this.selectedObject);
+    //             CommandHistory.executeCommand(selectCommand);
+    //             this.update();
+    //             this.showContextMenu(x, y);
+    //         }
+    //     }
 }
 
 export default CanvasController.getInstance();
