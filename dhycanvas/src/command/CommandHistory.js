@@ -11,7 +11,6 @@ class CommandHistory {
         command.execute();
         this.history.push(command);
         this.redoStack = [];
-        store.dispatch(updateCanvas());
     }
 
     undo() {

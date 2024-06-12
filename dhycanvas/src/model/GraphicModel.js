@@ -3,15 +3,17 @@ import store from '../redux/store';
 import { addObject, removeObject } from '../redux/actions';
 
 class GraphicModel {
+    static instance;
+
     constructor() {
-        if (!GraphicModel.instance) {
-            this.objects = [];
-            this.observers = [];
-            this.currentTool = 'none';
-            this.selectedObject = null;
-            GraphicModel.instance = this;
+        if (GraphicModel.instance) {
+            return GraphicModel.instance;
         }
-        return GraphicModel.instance;
+        GraphicModel.instance = this;
+        this.objects = [];
+        this.observers = [];
+        this.currentTool = 'none';
+        this.selectedObject = null;
     }
 
     setTool(tool) {
@@ -58,5 +60,4 @@ class GraphicModel {
     }
 }
 
-const instance = new GraphicModel();
-export default instance;
+export default new GraphicModel();

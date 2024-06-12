@@ -1,4 +1,4 @@
-// command/PencilDrawCommand.js
+// command/DrawCommand.js
 import { Command } from './Command';
 import GraphicModel from '../model/GraphicModel';
 

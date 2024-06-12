@@ -1,20 +1,28 @@
 // command/SelectCommand.js
-import { Command } from "./Command";
-import GraphicModel from "../model/GraphicModel";
+import { Command } from './Command';
+import GraphicModel from '../model/GraphicModel';
 
 export class SelectCommand extends Command {
-  constructor(object) {
-    super();
-    this.object = object;
-    this.previousSelection = null;
-  }
+    constructor(object) {
+        super();
+        this.object = object;
+        this.previousSelection = null;
+    }
 
-  execute() {
-    this.previousSelection = GraphicModel.selectedObject;
-    GraphicModel.selectedObject = this.object;
-  }
+    execute() {
+        this.previousSelection = GraphicModel.selectedObject;
+        if (this.previousSelection) {
+            this.previousSelection.isSelected = false;
+        }
+        GraphicModel.selectedObject = this.object;
+        this.object.isSelected = true;
+    }
 
-  undo() {
-    GraphicModel.selectedObject = this.previousSelection;
-  }
+    undo() {
+        this.object.isSelected = false;
+        if (this.previousSelection) {
+            this.previousSelection.isSelected = true;
+        }
+        GraphicModel.selectedObject = this.previousSelection;
+    }
 }
