@@ -21,4 +21,14 @@ export class PencilObject {
     });
     context.stroke();
   }
+
+  // 객체를 새 위치로 이동
+  move(x, y) {
+    let deltaX = x - this.points[0].x;
+    let deltaY = y - this.points[0].y;
+    this.points.forEach((point) => {
+      point.x += deltaX;
+      point.y += deltaY;
+    });
+  }
 }

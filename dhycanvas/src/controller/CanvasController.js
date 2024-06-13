@@ -15,6 +15,7 @@ import { DeleteCommand } from "../command/DeleteCommand";
 import { ShapeFactory } from "../model/ShapeFactory";
 import CommandHistory from "../command/CommandHistory";
 import GraphicModel from "../model/GraphicModel";
+import { PencilObject } from "../model/PencilObject";
 
 //캔버스에서 사용자 인터페이스를 관리
 class CanvasController {
@@ -36,7 +37,7 @@ class CanvasController {
     GraphicModel.addObserver(this); //GraphicModel의 옵저버로 등록
   }
 
-  // 싱글톤 인스턴스를 반환합니다.
+  // 싱글톤 인스턴스를 반환
   static getInstance() {
     if (!CanvasController.instance) {
       CanvasController.instance = new CanvasController();
@@ -54,7 +55,7 @@ class CanvasController {
   update() {
     const state = store.getState();
     if (state.currentTool !== "pencil") {
-      //   this.updateCanvas();
+      this.updateCanvas();
     }
     console.log("Canvas updated");
   }
@@ -93,9 +94,16 @@ class CanvasController {
       }
 
       if (obj === GraphicModel.selectedObject) {
-        context.strokeStyle = "blue";
+        context.strokeStyle = "#14DEF0";
         context.lineWidth = 4;
-        context.strokeRect(obj.x - 25, obj.y - 25, 50, 50);
+        context.setLineDash([5, 5]);
+        if (obj.tool === "pencil") {
+          obj.draw(context); //PencilObject의 draw 메서드 호출
+        } else {
+          const shape = ShapeFactory.createShape(obj.tool, obj.x, obj.y, obj.color);
+          shape.draw(context);
+        }
+        context.setLineDash([]);
       }
     });
   }
@@ -111,7 +119,25 @@ class CanvasController {
   //주어진 좌표에 있는 객체 선택
   selectObject(x, y, canvas) {
     const state = store.getState();
-    this.selectedObject = state.objects.find((obj) => Math.abs(obj.x - x) < 20 && Math.abs(obj.y - y) < 20);
+
+    // 펜슬로 그린 객체를 선택하기 위해 수정됨
+    this.selectedObject = state.objects.find((obj) => {
+      if (obj instanceof PencilObject) {
+        return obj.points.some((point) => Math.hypot(point.x - x, point.y - y) < 10);
+      }
+      return false;
+
+      // 펜슬 오브젝트만 선택 가능하도록
+      // this.selectedObject = state.objects.find((obj) => {
+      //   if (obj.tool === "pencil") {
+      //     return obj.points.some((point) => Math.abs(point.x - x) < 10 && Math.abs(point.y - y) < 10);
+      //   } else {
+      //     const dx = obj.x - x;
+      //     const dy = obj.y - y;
+      //     return Math.sqrt(dx * dx + dy * dy) < 20;
+      //   }
+    });
+
     if (this.selectedObject) {
       const selectCommand = new SelectCommand(this.selectedObject);
       CommandHistory.executeCommand(selectCommand);
@@ -215,7 +241,13 @@ class CanvasController {
     const context = canvas.getContext("2d");
 
     if (this.selectedObject && this.isMoveMode) {
-      this.currentCommand = new MoveCommand(this.selectedObject, x, y);
+      const center = this.selectedObject.points
+        ? this.calculateCenter(this.selectedObject)
+        : { x: this.selectedObject.x, y: this.selectedObject.y };
+      const deltaX = x - center.x;
+      const deltaY = y - center.y;
+
+      this.currentCommand = new MoveCommand(this.selectedObject, deltaX, deltaY);
       store.dispatch(startDrawing());
     } else {
       this.previousClick = Date.now();
@@ -242,11 +274,12 @@ class CanvasController {
         const shape = ShapeFactory.createShape(state.currentTool, x, y, state.currentColor);
         shape.draw(context);
         const obj = { tool: state.currentTool, x, y, color: state.currentColor };
+        GraphicModel.addObject(obj); // ** 수정: 새 도형을 GraphicModel에 추가
         const command = new DrawCommand();
         command.addPoint(obj);
         command.execute(context);
         CommandHistory.executeCommand(command);
-        store.dispatch(addObject(shape));
+        store.dispatch(addObject(obj)); // ** 수정: 새 도형을 상태에 추가
       }
     }
   }
@@ -264,14 +297,18 @@ class CanvasController {
     } else if (state.currentTool === "eraser" && this.currentCommand) {
       this.erase(x, y, context);
     } else if (this.isMoveMode && this.selectedObject) {
-      const moveCommand = new MoveCommand(this.selectedObject, x, y);
+      const deltaX =
+        x - (this.selectedObject.points ? this.calculateCenter(this.selectedObject).x : this.selectedObject.x);
+      const deltaY =
+        y - (this.selectedObject.points ? this.calculateCenter(this.selectedObject).y : this.selectedObject.y);
+      const moveCommand = new MoveCommand(this.selectedObject, deltaX, deltaY);
       CommandHistory.executeCommand(moveCommand);
       store.dispatch(updateCanvas());
       console.log(`Object moved to: (${x}, ${y})`);
     }
   }
 
-  //마우스 업 이벤트 처리
+  // 마우스 업 이벤트 처리
   handleMouseUp(e, canvas) {
     store.dispatch(stopDrawing());
     const context = canvas.getContext("2d");
@@ -282,9 +319,12 @@ class CanvasController {
     }
     if (this.isMoveMode && this.selectedObject) {
       const { x, y } = this.getCursorPosition(e, canvas);
-      this.selectedObject.x = x;
-      this.selectedObject.y = y;
-      const moveCommand = new MoveCommand(this.selectedObject, x, y);
+      const center = this.selectedObject.points
+        ? this.calculateCenter(this.selectedObject)
+        : { x: this.selectedObject.x, y: this.selectedObject.y };
+      const deltaX = x - center.x;
+      const deltaY = y - center.y;
+      const moveCommand = new MoveCommand(this.selectedObject, deltaX, deltaY);
       CommandHistory.executeCommand(moveCommand);
       this.isMoveMode = false;
       this.selectedObject = null;
@@ -304,6 +344,16 @@ class CanvasController {
     this.currentCommand.addPoint(point);
     store.dispatch(addObject(point));
     console.log(`Pencil drawing at: (${x}, ${y})`);
+  }
+
+  calculateCenter(object) {
+    const xSum = object.points ? object.points.reduce((sum, point) => sum + point.x, 0) : object.x;
+    const ySum = object.points ? object.points.reduce((sum, point) => sum + point.y, 0) : object.y;
+    const length = object.points ? object.points.length : 1;
+    return {
+      x: xSum / length,
+      y: ySum / length,
+    };
   }
 
   erase(x, y, context) {

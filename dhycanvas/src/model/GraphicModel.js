@@ -44,8 +44,8 @@ class GraphicModel {
   updateObjectPosition(obj, newX, newY) {
     if (obj.points) {
       const center = this.calculateCenter(obj);
-      const deltaX = newX - obj.points[0].x;
-      const deltaY = newY - obj.points[0].y;
+      const deltaX = newX - center.x;
+      const deltaY = newY - center.y;
       obj.points.forEach((point) => {
         point.x += deltaX;
         point.y += deltaY;
