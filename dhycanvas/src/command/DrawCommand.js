@@ -1,22 +1,25 @@
 // command/DrawCommand.js
-import { Command } from './Command';
-import GraphicModel from '../model/GraphicModel';
+import { Command } from "./Command";
+import GraphicModel from "../model/GraphicModel";
+import { PencilObject } from "../model/PencilObject";
 
 export class DrawCommand extends Command {
-    constructor() {
-        super();
-        this.points = [];
-    }
+  constructor() {
+    super();
+    //PencilObject 인스턴스 생성
+    this.pencilObject = new PencilObject();
+  }
 
-    addPoint(point) {
-        this.points.push(point);
-    }
+  //그릴 점들을 모아주고
+  addPoint(point) {
+    this.pencilObject.addPoint(point);
+  }
 
-    execute() {
-        this.points.forEach((point) => GraphicModel.addObject(point));
-    }
+  execute() {
+    GraphicModel.addObject(this.pencilObject);
+  }
 
-    undo() {
-        this.points.forEach((point) => GraphicModel.removeObject(point));
-    }
+  undo() {
+    GraphicModel.removeObject(this.pencilObject);
+  }
 }
