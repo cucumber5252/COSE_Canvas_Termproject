@@ -48,6 +48,10 @@ class CanvasController {
     }
 
     update() {
+        const state = store.getState();
+        if (state.currentTool !== 'pencil') {
+            this.updateCanvas();
+        }
         console.log('Canvas updated');
     }
 
@@ -73,24 +77,11 @@ class CanvasController {
                 context.stroke();
             } else if (obj.tool === 'eraser') {
                 context.clearRect(obj.x - 10, obj.y - 10, 20, 20);
-            } else if (obj.tool === 'circle') {
-                context.beginPath();
-                context.arc(obj.x, obj.y, 20, 0, 2 * Math.PI);
-                context.fill();
-                context.stroke();
-            } else if (obj.tool === 'rectangle') {
-                context.beginPath();
-                context.rect(obj.x - 20, obj.y - 20, 40, 40);
-                context.fill();
-                context.stroke();
-            } else if (obj.tool === 'triangle') {
-                context.beginPath();
-                context.moveTo(obj.x, obj.y - 20);
-                context.lineTo(obj.x - 20, obj.y + 20);
-                context.lineTo(obj.x + 20, obj.y + 20);
-                context.closePath();
-                context.fill();
-                context.stroke();
+            } else {
+                const shape = ShapeFactory.createShape(obj.tool, obj.x, obj.y, obj.color);
+                if (shape) {
+                    shape.draw(context);
+                }
             }
 
             if (obj === GraphicModel.selectedObject) {

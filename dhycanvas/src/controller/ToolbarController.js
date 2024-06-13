@@ -1,4 +1,3 @@
-// controller/ToolbarController.js
 import CommandHistory from '../command/CommandHistory';
 import store from '../redux/store';
 import { setTool, setColor, updateCanvas, clearCanvas } from '../redux/actions';
@@ -7,6 +6,13 @@ class ToolbarController {
     constructor() {
         if (!ToolbarController.instance) {
             ToolbarController.instance = this;
+        }
+        return ToolbarController.instance;
+    }
+
+    static getInstance() {
+        if (!ToolbarController.instance) {
+            ToolbarController.instance = new ToolbarController();
         }
         return ToolbarController.instance;
     }
@@ -35,5 +41,5 @@ class ToolbarController {
     }
 }
 
-const instance = new ToolbarController();
+const instance = ToolbarController.getInstance();
 export default instance;
